@@ -1,6 +1,4 @@
-# Carlos Shuttle Booking System
 
-A comprehensive bus ticket booking and membership system for Carlos Shuttle, extending https://www.carloshuttlenamibia.com/
 
 ## Features
 
