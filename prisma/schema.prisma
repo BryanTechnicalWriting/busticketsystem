@@ -1,0 +1,143 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  firstName     String
+  lastName      String
+  phoneNumber   String?
+  role          String    @default("USER") // was enum UserRole
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  membership    Membership?
+  bookings      Booking[]
+  cartItems     CartItem[]
+
+  @@map("users")
+}
+
+model Membership {
+  id              String            @id @default(cuid())
+  membershipNumber String           @unique
+  userId          String            @unique
+  firstName       String
+  lastName        String
+  idNumber        String
+  dateOfBirth     DateTime
+  email           String
+  phoneNumber     String
+  status          String            @default("ACTIVE") // was enum MembershipStatus
+  purchasedAt     DateTime          @default(now())
+  expiresAt       DateTime
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  // Relations
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("memberships")
+}
+
+model Trip {
+  id              String    @id @default(cuid())
+  date            DateTime
+  departureTime   String    // "07:00" or "14:00"
+  route           String    // "Whk - Walvis Bay" or "W/Bay - Whk"
+  totalSeats      Int       @default(22)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  tickets         Ticket[]
+  bookings        Booking[]
+
+  @@unique([date, departureTime, route])
+  @@map("trips")
+}
+
+model Ticket {
+  id              String        @id @default(cuid())
+  tripId          String
+  seatNumber      Int
+  referenceNumber String        @unique
+  status          String        @default("PENDING") // was enum TicketStatus
+  price           Float
+  discountType    String        @default("NONE") // was enum DiscountType
+  discountDocumentUrl String?   // For pensioner/student ID uploads
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relations
+  trip            Trip          @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  booking         Booking?
+  cartItems       CartItem[]
+
+  @@unique([tripId, seatNumber])
+  @@map("tickets")
+}
+
+model Booking {
+  id              String        @id @default(cuid())
+  userId          String
+  tripId          String
+  ticketId        String        @unique
+  referenceNumber String        @unique
+  status          String        @default("CONFIRMED") // was enum TicketStatus
+  price           Float
+  discountType    String        @default("NONE") // was enum DiscountType
+  paymentReference String?      // Adumo payment reference
+  refundReference String?       // Adumo refund reference if cancelled
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relations
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trip            Trip          @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  ticket          Ticket        @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@map("bookings")
+}
+
+model CartItem {
+  id              String    @id @default(cuid())
+  userId          String
+  ticketId        String
+  expiresAt       DateTime  // 24 hours from when added to cart
+  createdAt       DateTime  @default(now())
+
+  // Relations
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ticket          Ticket    @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, ticketId])
+  @@map("cart_items")
+}
+
+model Promotion {
+  id              String    @id @default(cuid())
+  title           String
+  description     String
+  discountPercent Float?
+  priceFreeze     Boolean   @default(false)
+  validFrom       DateTime
+  validTo         DateTime
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("promotions")
+}
+
